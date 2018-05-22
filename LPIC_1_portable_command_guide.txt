@@ -1,0 +1,654 @@
+#################################################################################################
+######					PART 1						#########
+#################################################################################################
+
+1. DETERMINE AND CONFIGURE HARDWARE SETTINGS
+1.1 /sys 
+ll /sys/block	#view block devices (hdd, cd, lvm)
+ll /sys/bus	#view attached devices
+ll /sys/bus/cpu/devices	#view cpus
+
+
+1.2 /proc
+cat /proc/cmdline 	#view boot kernel parameters
+cat /proc/cpuifo 	#view info about cpu
+cat /proc/devices	#list of character/block(how to read them) devices recognized by kernel
+cat /proc/meminfo	#view memory details
+cat /proc/modules	#list loaded kernel modules
+
+1.3 /dev 	#contains device files
+ll /dev/sd*	#list SATA SCSI USB devices
+	/dev/sda1	#dev a partition 1
+	/dev/sda2	#dev a partition 2
+	/dev/sdb	#dev b
+ll /dev/cd*	#list cd
+ll /dev/dm*	#list RAID, LVM devices
+ll /dev/tty*	#list terminal devices
+
+1.4 modprobe	#used to add and remove modules from kernel
+modprobe -c	#display current configuration
+modprobe -r	#remove module
+
+1.5 lsmod	#display kernel modules loaded into memory
+	Module                  Size  Used by
+	nf_defrag_ipv6         35104  1 nf_conntrack_ipv6
+	nf_nat_ipv6            14131  1 ip6table_nat
+	ip6table_mangle        12700  1 
+	ip6table_security      12710  1 
+
+1.5 lspci	#display all devices attached to PCI BUSES
+	00:01.3 Bridge: Intel Corporation 82371AB/EB/MB PIIX4 ACPI (rev 03)
+	00:02.0 VGA compatible controller: Red Hat, Inc. QXL paravirtual graphic card (rev 04)
+	00:03.0 Ethernet controller: Red Hat, Inc Virtio network device
+
+1.6 lsusb	#display usbdevices
+
+2 BOOT THE SYSTEM
+1. The boot sequence from BIOS to boot completion
+	[BIOS] > [BOOTLOADER] > [KERNEL] > [SYSTEM INITIALIZATION]
+	Where
+	1 BIOS runs checks and then loads BOOTLOADER from MBR	
+	2 BOOTLOADER aka grub loads the kernel and its modules using initramfs
+	3 KERNEL is loaded from hdd, performs boot tasks and passes control to system init
+	4 SYSTEM INITIALIZATION is responsible for starting system services
+		SysVinit	oldest
+		Upstart		not so old
+		Systemd		most widely used
+			
+2.  Common commands for the boot loader
+b	#boot selected line
+e	#edit selected line
+c	#enter grub comand line interface
+o	#open/new line after the current
+O	#open/new line before the current
+d	#delete current line
+
+3.  Options for the kernel at boot time
+quiet	#suppress boot messages
+single	#boot into single user mode
+root=	#location of the GRUB boot filesystem
+ro	#mount GRUB boot FS initially as read-only
+init=/bin/bash	#boot to simple bash shell
+
+4.  SysVinit
+SysVinit read /etc/inittab file, line initdefault, to determine which RUNLEVEL boot to.
+/etc/rc.d/
+
+PENDING FURTHER ANALYSIS IF REQUIRED
+
+
+
+5.  Systemd
+Systemd uses TARGETS
+	Example overview of Systemd boot process
+	[system.target] > [basic.target] > [multi-user.target] > [graphical.target]
+	
+	/usr/lib/systemd/system/	#more targets can be viewed here
+IDENTIFY DEFAULT TARGET 
+	ls -l /usr/lib/systemd/system/default.target
+	lrwxrwxrwx. 1 root root 16 Oct 13 05:44 /usr/lib/systemd/system/default.target -> graphical.target
+
+6.  Upstart
+DEFAULT boot-up runlevel is defined in the /etc/init/rc-sysinit.conf file
+Services are defined by configuration files in the /etc/init directory. 
+
+7.  Boot events in the log files
+cat /var/log/boot.log	#view system boot logs
+cat /var/log/dmesg	#view kernel messages
+
+8.  dmesg
+dmesg | head	#display memory copy kernel messages (kernel ring buffer)
+
+
+9.  BIOS
+10.  bootloader
+11.  kernel
+12.  initramfs
+13.  init
+
+3 CHANGE RUN LEVELS / BOOT TARGETS AND SHUTDOWN OR REBOOT THE SYSTEM
+1. Set the default runlevel or boot target
+SYSVINIT	Modify the second field of the initdefault line of /etc/inittab
+			id:5:initdefault:
+SYSTEMD		Set the symbolic link from default.target to the desired target
+UPSTART		set the DEFAULT_RUNLEVEL value in the /etc/init/rc-sysinit.conf 
+			file:env DEFAULT_RUNLEVEL=2
+
+2. Change between runlevels / boot targets, including single-user mode
+Traditional SYSVINIT and SYSTEMD runlevels
+	runlevel	target			description
+	0		poweroff.target		halts the system
+	1 or single	rescue.target		single user mode
+	2		multi-user.target	no nfs sharing or gui
+	3		multi-user.target	no gui
+	4		not defined		NA or copy of 3
+	5		graphical.target	GUI
+	6		reboot.target		reboot system
+	emergency	emergency.target	boot stage very basic environment is loaded
+
+Change runleves or switch to a different target
+init		#SYSTEMD example init 1 
+telinit		#SYSVINIT example init 1
+shutdown
+reboot
+systemctl	#Control the systemd system and service manager
+
+3. Shut down and reboot from the command line
+shutdown -halt		#halts the system
+shutdown -P		#completely powers off the system
+shutdown -r		#reboot
+shutdown -P -k		#sends a wall message to everyones' terminal
+shutdown -c 		#cancel a pending shutdown
+
+4. Alert users before switching runlevels / boot targets or other major system events
+wall -- send a message to everybody's terminal
+
+5. Properly terminate processes
+In this context, processes refer to “services” that are controlled by SysVinit, Systemd, and Upstart
+The following table details how to manage these services properly. 
+
+SYSVINIT/UPSTART	SYSTEMD				DESCRIPTION
+service process start	systemctl start process		start process
+service process stop	systemctl stop process		stop process
+service process restart	systemctl restart process	restarts process
+service process reload	systemctl reload process	reloads the process config file
+service process status	systemctl status process	shows status
+
+6. /etc/inittab
+7. shutdown
+8. init
+9. /etc/init.d/
+10. telinit
+11. systemd
+12. systemctl
+13. /etc/systemd/
+14. /usr/lib/systemd/
+15. wall
+sudo wall -n "this is a broadcast message"
+#################################################################################################
+######					PART 2						#########
+#################################################################################################
+4. DESIGN THE HARD DISK LAYOUT
+1. Allocate filesystems and swap space to separate partitions or disks
+[HDD] > [PV] > [VG] > [LV] > [FS (mkfs)]
+
+2. Tailor the design to the intended use of the system
+XFS, ext4, btrfs
+lvm, RAID Redundant Array of Independent Devices
+
+3. Ensure the /boot partition conforms to the hardware architecture requirements for booting
+Traditional GRUB cannot access LVM nor RAID
+/boot must be regular ¿what is the meaning of 'regular'?
+
+4. Knowledge of basic features of LVM
+[HDD] > [PV] > [VG] > [LV] > [FS]
+
+5. / (root) filesystem
+top level virtual fs
+
+6. /var filesystem
+vriable info is stored there
+
+7. /home filesystem
+regular users home directories
+
+8. /boot filesystem
+kernel, bootloader, initramfs
+
+9. Swap space
+HDD space used as RAM when RAM becomes full
+Usually SWAP =  RAM or SWAP = RAM x 2
+
+10. Mount points
+Directories used to attach physical Filesystems
+/dev/sda1 on /boot type xfs (rw,relatime,seclabel,attr2,inode64,noquota)
+
+11. Partitions
+Partitions used to separate a HDD into smaler components
+Can be
+	PRIMARY
+	EXTENDED
+
+[/dev/sda1]	PRIMARY
+[/dev/sda2]	PRIMARY
+[/dev/sda3]	PRIMARY
+|	  /dev/sda4	EXTENDED      |
+|/dev/sda5 /dev/sda6 /dev/sda6|	LOGICAL PARTITION
+
+fdisk		#manipulate partition table
+parted -l	#show partition info
+
+5. INSTALL A BOOT MANAGER
+1. Providing alternative boot locations and backup boot options 
+BOOTLOADERS are usually installed on MBR
+GRUB must be installed on specific partition MBR if there are multiple partitions 
+grub-install /dev/sda1
+
+2. Install and configure a boot loader such as GRUB Legacy 
+cat /boot/grub2/grub.cfg	
+grep password /boot/grub2/grub.cfg
+
+3. Perform basic configuration changes for GRUB 2 
+cat /etc/default/grub	#view GRUB configurtion or make changes
+ll /etc/grub.d	#View advanced GRUB files
+
+4. Interact with the boot loader 
+e	#edit line
+c	#enter GRUB cmd prompt
+
+5. menu.lst, grub.cfg, and grub.conf	#GRUB config file name depends on distro
+6. grub-install /dev/sda1	#Install GRUB from CD to MBR of /dev/sda1
+7. grub-mkconfig		#generate configuration files from /etc/default/grub and /etc/grub.d
+8. MBR
+	Holds two things 
+		1 BOOTLOADER	edited through grub-install
+		2 PARTITION TABLE	edited through fdisk
+
+6. MANAGE SHARED LIBRARIES
+1. Identify shared libraries 
+Files used by executable programs
+libname.so	#name convention
+
+2. Identify the typical locations of system libraries 
+ll /lib
+ll /usr/lib
+ll /usr/local/lib
+
+3. Load shared libraries 
+4. ldd 
+ldd -u /bin/sudo	#print shared ñibraries dependencies
+
+5. ldconfig 
+used to create chache of most recent shared libraries
+
+6. /etc/ld.so.conf and /etc/ld.so.cache
+/etc/ld.so.conf
+/etc/ld.so.cache
+files used by ldconfig to store configurations
+
+ldconfig -p	#show current cache
+
+/etc/ld.so.conf.d/myconfigfile.conf > ldconfig	
+
+
+7. LD_LIBRARY_PATH
+environment variable to especify shared libraries for regurar users
+
+PENDING CHAPTER 7 USE DEBIAN PACKAGE MANAGEMENT
+
+PENDING CHAPTER 8 USE RPM AND YUM PACKAGE MANAGEMENT
+
+#################################################################################################
+######					PART 3						#########
+#################################################################################################
+CHAPTER 9 Work on the Command Line
+1. Use single shell commands and one-line command sequences to perform basic tasks on the command line
+pwd ; date ; ls		#execute a secuence of comands separated by ';'
+
+2. Use and modify the shell environment, including defining, referencing, and exporting environment variables
+
+MYVARIABLE="HELLO"	#define variable ALWAYS LOCAL
+echo $MYVARIABLE	#reference variable ALWAYS LOCAL
+env			#print environment variables
+set			#print set variables
+export MYVARIABLE	#export variable
+/home/user/.bash_profile	#Export variables permanently
+
+3. Use and edit the command history
+history		#bash built-in, invoke comands
+!997		#call 997 comand in history
+^str1^str2	#execute last comand, but replace str1 with str2
+
+4. Invoke commands inside and outside the defined path
+date				#whenever a comand is run, PATH var is seached
+/usr/bin/date			#FULLPATH must be selected when the comand is outside PATH
+PATH="$PATH:/path/to/add"	#or add dir to PATH
+
+5. bash	BUILD-IN commands
+echo	#display text or variables content
+env	#display env vars in the current shell
+export
+pwd
+set
+unset
+man	
+uname		#print system information
+history -c 	#clear history
+uname -r	#kernel release
+uname -v	#kernel version
+uname -p	#kernel procesor
+uname -o	#os
+vi ~/user/.bash_history	same as history
+
+CHAPTER 10 Process Text Streams Using Filters
+cat
+	cat cert.crt key.key |  pem.pem	#concatenate files
+	cat -n /etc/passwd 	#display numbers
+	cat -E /etc/passwd	#display $ end of lines 
+cut
+	cut -d':' -f1 /etc/passwd	#define delimiter and select field 1 
+expand
+	expand /etc/hosts | cat -T  	#converts tabs to spaces
+	unexpand /etc/hosts | cat -T 	#converts spaces to tabs
+fmt
+	fmt -w 40 /etc/passwd		#limit the amount of characters to display
+	fmt -u /tmp/test		#limits the amount of spaces between sentences
+head
+	head -n 10 /etc/paswd		
+join
+	join ages_table names_table	#join based on common field
+less
+	less /etc/passwd		#open file and allow  navigation
+nl
+	nl /etc/passwd			#display line numbers
+od					#dump files in different formats
+	od -b ages_table		#bin
+	od -x ages_table		#hexa
+	od -o ages_table		#octal	
+	od -d ages_table		#decimal
+paste
+	paste ages_table names_table	#merge files
+pr
+	pr -d /etc/passwd		#convert to printable format 
+sed Steam EDitor
+	file1
+		hello
+		bye
+		bye
+		andhello
+	sed -i file1 s/bye/BYE/g file2
+	where -i inplace s substitute g global
+		file2
+		hello
+		BYE
+		BYE
+		andhello
+	sed -i 's/24/42/g' ages_table 
+	sed 's/24/42/g' ages_table 
+	sed '/24/d' ages_table		#delete
+	sed '/24/a\LOL' ages_tabe 	#add after
+	sed '/24/c\LOL' ages_table	#change 
+sort
+	sort -n file	#sort numeric
+	sort -h file	#sort human
+	sort -r file 	#sort reverse
+	sort -u file	#remove duplicate lines
+split
+	split -l 10000 largefile.txt	#split to files of 1000 lines
+tail
+	tail -n 10	#show last 10 lines of a files
+tr translate
+	date | tr 'a-z' 'A-Z'	
+unexpand
+	unexpand /etc/hosts | cat -T 	#converts spaces to tabs
+uniq
+	uniq -c names.txt	#count duplicates
+wc	#display NEWLINE, WORD, BYTE
+		2	4	24
+	
+CHAPTER 11 Perform Basic File Management
+Copy, move, and remove files and directories individually
+	cp
+	mv
+	rm
+
+Copy multiple files and directories recursively
+	cp -r /home/hector/* /tmp/backup
+
+Remove files and directories recursively
+	rm -rf /home/hector/evidence
+
+Use simple and advanced wildcard specifications in commands
+	File globbing
+
+Using find to locate and act on files based on type, size, or time
+	find / -name backupConfig.sh
+	find / -amin -3			#find files accessed last 3 mins or less
+	find / -mmin -3			#find files modificated last 3 mins or less
+	find / -group websrvr		#find files owned by group
+	find / -user wassrvr		#find files owned by user
+	find / -perm 755
+	find / -perm u=x
+	find / -size +1G		#files more than 1GB
+	find / -size -512k		#files less than 512kb
+	find / -size +20M		#files more than 20Mb
+	find / -name httpd.conf -exec cp {} /tmp/{}.bak \;
+
+Usage of tar, cpio, and dd
+
+cp
+
+find
+
+mkdir
+
+mv
+
+ls
+	ls -lStrh			#list sort time reverse human
+	ls -F				#list and append and identifier
+	-rw-rw-r--. 1 hector hector   65667787 Feb 15 16:02 zoom_x86_64.rpm
+	[-]      [rw-rw-r--] [.] [1]      [hector][hector]   65667787 [Feb 15 16:02] [zoom_x86_64.rpm]
+	FILETYPE PERMISSIONS ACL HARDLINKS OWNER GROUP       SIZE      MODIFICATION   NAME	
+
+rm
+
+rmdir
+
+touch
+
+tar
+	tar cvf myfile.tar /tmp/files*	#create tar
+	tar tf myfile.tar		#list tar contents
+	tar xvf myfile.tar 		#extract tar
+cpio
+	find /etc -name "*.conf" | cpio -ov > conf.cpq	#create archive of conf files
+dd
+	dd if=/dev/sdb of=/dev/sdc bs=4096	#backup drive b into drive c, blocksize of 4096
+file
+
+gzip
+	gzip -c 
+gunzip
+
+bzip2
+
+xz
+
+File globbing (wildcard)
+	cp *.txt ~		#copies all files that end in .txt:
+	rm ???? 		#remove all files that are four characters long:
+	file [abc]* | file [a-c]*		#view the file type for all files in the current directory that begin with a, b, or c
+	man ascii
+	
+
+CHAPTER 12 Use Streams, Pipes, and Redirects
+Redirecting standard input, standard output, and standard error
+	cmd < file	#redirect stdin
+	cmd > file 	#redirect stdout
+	cmd 2> /dev/null	#redirect stderr
+Pipe the output of one command to the input of another command
+
+	cat /etc/passwd > /tmp/passwd.bk
+Use the output of one command as arguments to another command
+	today is $(date)	
+
+tee Sends output to both stdout and a file
+	echo "Today is $(date) and you are in the $(pwd) directory"
+	
+xargs takes data from Stdin to build and execute commands
+	input_command | xarg execute_command
+	find /etc/httpd/ -name httpd.conf.old | xargs rm
+
+
+
+CHAPTER 13 Create, Monitor, and Kill Processes
+& runs program on background
+	firefox&
+bg restart process from background
+	jobs
+		jobs are listed by id
+	bg %1
+fg restart process from foreground
+	jobs
+		jobs are listed by id
+	fg %1
+
+kill
+	jobs 
+		jobs are listed by id
+	kill %id
+
+nohup 
+	hangup signal is sent to child processes when stopping parent process
+	parent(bash shell) -> child (any command running on that shell)
+	
+	disable hangup signal so the child process can continue 
+	$nohup /opt/ibm/Websphere/AppServer/profiles/AppSrvr01/bin/backupConfig.sh
+
+ps
+	list Processes
+	$ps -ef 
+		where 
+			-e display all processes
+			-f display full info
+top
+	display linux processes
+	$top 
+
+free
+	display memory info
+	$free -k - display in kilobytes
+	$free -m - display in megabytes
+	$free -g - display in gigabytes
+
+uptime
+	display how long the system has been up
+	$uptime
+
+	understanding load average
+	1.0 on a single cpu means 100% load
+	1.0 on a dual cpu means 50% load
+	1.0 on a single cpu means 200% load (proceses were waiting for the cpu)
+
+pgrep
+	combination of ps + grep
+	$pgrep -f java
+
+pkill
+	pkill processes by user/group
+	$pkill -u sara
+
+killall
+	kill all professes of a specific name
+	$killall chrome
+
+
+CHAPTER 14 Modify Process Execution Priorities
+nice values are used to indicate to cpu which process has higher priority
+goes from higher (-20) to lowest (19)
+
+nice 
+	Know the default priority of a job that is created
+	Run a program with a higher or lower priority than the default
+ps 
+	list processes
+	$ps -ef | grep java
+
+renice
+	Change the priority of a running process
+	[hector@oc0625864320 ~]$ ps -o nice,pid,cmd
+	 NI   PID CMD
+  	0  5548 /bin/bash
+  	0  6614 ps -o nice,pid,cmd
+
+	$renice -n 10 -p 6614
+top
+	view running processes
+	$top 
+
+CHAPTER 15 Search Text Files Using Regular Expressions
+
+Use regular expression tools to perform searches through a filesystem or file content
+	find / -regex ".*chpasswd.*8.*" 2>/dev/null
+	find / -regex "^httpd*"
+grep
+	search based on file content
+	$sudo grep -r "^config" /etc
+	$sudo grep -r "^ssl" /etc/httpd
+egrep matches extended regular expression
+	$egrep "ADMIN/DBA" /home/users.txt
+
+fgrep search fixed character strings
+	$fgrep "$" /home/users.txt
+sed
+	StreangEDitor
+	edits data in a non interactive method
+	$sed 's/localhost/myhost/' /etc/hosts	changes the string "localhost" to "myhost" on file s/etc/hosts
+	sed -i 's/24/42/g' ages_table 
+	sed 's/24/42/g' ages_table 
+	sed '/24/d' ages_table		#delete
+	sed '/24/a\LOL' ages_tabe 	#add after
+	sed '/24/c\LOL' ages_table	#change 
+
+regex(7)
+	Create simple regular expressions containing several notational elements
+	Basic REs are the original 
+	Extended REs are the newer additions.
+
+CHAPTER 16 Perform Basic File Editing Operations Using vi
+	Navigate a document using vi
+		use h j k l
+	Use basic vi modes
+		Command mode
+			allows navigation
+		Insert mode
+			allows to edit text s
+		Last line mode
+			allows to enter comands such as :wq
+	/, ?
+		/ssl - search forward string ssl
+		?ssl - search backwards
+	i, o, a
+		i insert mode before
+		o add new line
+		a inser mode
+
+	c, d, p, y, dd, yy
+		c change text
+		cw change word
+		d delete text
+		dw deletew word
+		p paste text 
+		dd delete line
+		yy copy current line
+
+	ZZ, :w!, :q!, :e!
+		ZZ save and exit equivalent to wq and x
+		e! forget all changes
+
+
+#################################################################################################
+######					PART 4						#########
+#################################################################################################
+CHAPTER 17 Create Partitions and Filesystems
+
+CHAPTER 18 Maintain the Integrity of Filesystems
+
+CHAPTER 19 Control Mounting and Unmounting of Filesystems
+
+CHAPTER 20 Manage Disk Quotas
+
+CHAPTER 21 Manage File Permissions and Ownership
+
+CHAPTER 22 Create and Change Hard and Symbolic Links
+
+CHAPTER 23 Find System Files and Place Files in the Correct Location
+
+
+
+
+
+
+
+
