@@ -625,6 +625,7 @@ CHAPTER 16 Perform Basic File Editing Operations Using vi
 
 	ZZ, :w!, :q!, :e!
 		ZZ save and exit equivalent to wq and x
+		ZQ dont save and exit 	
 		e! forget all changes
 
 
@@ -632,18 +633,157 @@ CHAPTER 16 Perform Basic File Editing Operations Using vi
 ######					PART 4						#########
 #################################################################################################
 CHAPTER 17 Create Partitions and Filesystems
+Manage MBR partition tables
+	MBR partition tables
+		Only one main partition
+		One partition can become an extended partition 
+			[          EXTENDED PARTITION /dev/sda4                ]
+			[        Logical partitions /dev/sda5 /dev/sda6        ]
+
+Awareness of ReiserFS and btrfs
+	ReiserFS	OLD  journal filesystem and was known for good performance on filesystems that had many small files.
+	btrfs		MORE USED The btrfs filesystem uses copy-on-write (CoW) and other advanced filesystem features.
+
+fdisk
+	view traditional partition tables
+	$fdisk -l 
+	$fdisk /dev/sda1
+
+gdisk
+	interactively view GUID Partition Table
+	$gdisk 
+
+parted
+	interactive tool that allows you to display and modify both traditional and GUID partition tables
+
+mkfs Use various mkfs commands to create various filesystems, such as ext2/ext3/ext4, XFS, and VFAT
+	$mkfs -t ext4 /partition/name
+
+mkswap  convert a partition or a file into a device that can be used as virtual memory
+	$dd if=/dev/zero of=/var/extraswap count=30 bs=1M
+
+swapon take a valid swap device and enable it to be used as virtual memory on the system.
+	$swapon -a /var/extraswap	add devices to swap
+	$swapon -s 					view swap devices
 
 CHAPTER 18 Maintain the Integrity of Filesystems
 
+Repair simple filesystem problems
+
+du Monitor free space and inodes
+	provides estimated amount of disk usage
+	$du -sh /usr/lib
+	1.2G	/usr/lib
+
+df Monitor free space and inodes
+	display usage of partitions and logical devices
+	$df -ih
+
+fsck Repair Simple Filesystem Problems on unmounted FS
+	$fsck /dev/sda -y
+
+e2fsck Repair Simple Filesystem Problems
+	used for ext 3, ext 4
+
+mke2fs
+	designed specifically to create ext2/ext3/ext4 filesystem
+	$mke2fs /dev/sda2 
+
+debugfs
+	interact directly with with filesystems
+	$debugfs /dev/sda1
+
+dumpe2fs Verify the integrity of filesystems
+	display filesystem metadata
+
+tune2fs Verify the integrity of filesystems
+	display or modify specific metadata for an ext2/ext3/ext4 filesystem
+	$tune2fs -m 20 /dev/sdb1
+
+XFS tools (such as xfs_metadump and xfs_info) Verify the integrity of filesystems
+	$xfs_metadump
+
 CHAPTER 19 Control Mounting and Unmounting of Filesystems
+/etc/fstab
+	used to specify which filesystems to mount
+	FORMAT
+
+	devices 	mountpoint		type	Options 		debug   fsck
+	/dev/sda1      /              ext4    defaults             1   1
+
+/media
+	used to mount removable media
+mount
+	display the currently mounted filesystems
+	mount manually a fylesystem
+
+umount
+	unmonfs
 
 CHAPTER 20 Manage Disk Quotas
+	/dev/sdb1      /              ext4    usrquota             1   1
+	filesystem needs to be mounted using usrquota
+
+quota Set up a disk quota for a filesystem
+	$quotacheck -cugm /dev/sdb1  create the initial quota databases
+
+edquota Edit, check, and generate user quota reports
+	$edquota sarah #vim opens
+
+repquota
+	display quotas for an entire filesystem
+
+quotaon/quota off
+
 
 CHAPTER 21 Manage File Permissions and Ownership
 
+Use access modes such as suid, sgid, and the sticky bit to maintain security
+	SUID When set on executable files, suid allows a program to access files using the permissions of the user owner of the executable file.
+		$chmod u+s file
+	SGID When set on executable files, sgid allows a program to access files using the permissions of the group owner of the executable file.
+		$chmod g+s file
+	STICKY When the sticky bit is set on directories, files in the directory can only be removed by the user owner of the file, the owner of the directory, or the root user.
+		$chmod o+t file
+
+chmod
+	change permissions of user
+
+umask
+	sets default permissions for files and directories.
+
+
+chown
+	change owner of user
+
+chgrp
+	change group of user
+
+
 CHAPTER 22 Create and Change Hard and Symbolic Links
+ Copying versus linking files
+ 	HARDLINKS
+ 		pointer to inode, if file is deleted hardlink remains
+ 	SOFTLINK
+ 		pointer to file, if file is deleted link is broken
+
+ln -s target linkfile
+ln target linkfile
 
 CHAPTER 23 Find System Files and Place Files in the Correct Location
+find
+
+locate
+
+updatedb
+
+whereis
+
+which
+
+type
+
+/etc/updatedb.conf
 
 
 
